@@ -2,7 +2,8 @@ import { SafeAreaView, StyleSheet, TextInput } from 'react-native';
 
 import { Text, View } from '@/src/components/Themed';
 import { useState } from 'react';
-
+import { useColorScheme } from '@/src/components/useColorScheme';
+import Colors from '@/src/constants/Colors';
 
 export default function LoginScreen() {
   const [form, setForm] = useState({
@@ -10,16 +11,21 @@ export default function LoginScreen() {
     password: '',
   });
 
+  // src/constants/Colors.ts
+  const theme = useColorScheme() as 'light' | 'dark';
+
+
+
   return(
-    <SafeAreaView style={{flex: 1, backgroundColor: '#e8ecf4'}}>
+    <SafeAreaView style={{flex: 1}}>
       <View style={styles.container}>
-        <Text style={styles.title}>
-            Sign in to <Text style={{ color: '#075eec' }}>MyApp</Text>
+        <Text style={[styles.title, {color: Colors[theme].text}]}>
+            Sign in to <Text style={{ color: '#6a00ec' }}>Weat Learn</Text>
           </Text>
 
         <View style={styles.form}>
           <View style={styles.input}>
-            <Text style={styles.inputLabel}>Username</Text>
+            <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Username</Text>
 
             <TextInput
               autoCapitalize='none'
@@ -28,23 +34,29 @@ export default function LoginScreen() {
               keyboardType="email-address"
               placeholder='someone@example.com'
               placeholderTextColor='gray'
-              style={styles.inputControl}
+              style={[styles.inputControl, {
+                color: "#1A1A1A",
+                backgroundColor:Colors[theme].inputBackground,
+              }]}
               value={form.email}
               onChangeText={email => setForm({ ...form, email})}/>
             </View>
             <View style={styles.input}>
-            <Text style={styles.inputLabel}>Password</Text>
+            <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Password</Text>
 
             <TextInput
               autoCapitalize='none'
               autoCorrect={false}
               clearButtonMode='while-editing'
               keyboardType="email-address"
-              placeholder='someone@example.com'
+              placeholder='********'
               placeholderTextColor='gray'
-              style={styles.inputControl}
-              value={form.email}
-              onChangeText={email => setForm({ ...form, email})}/>
+              style={[styles.inputControl, {
+                color: "#1A1A1A",
+                backgroundColor:Colors[theme].inputBackground,
+              }]}
+              value={form.password}
+              onChangeText={password => setForm({ ...form, password})}/>
         </View>
       </View>
     </View>
@@ -80,7 +92,6 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#222',
     marginBottom: 8,
   },
   inputControl: {
@@ -90,9 +101,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 15,
     fontWeight: '500',
-    color: '#222',
     borderWidth: 1,
-    borderColor: '#C9D3DB',
     borderStyle: 'solid',
   },
   separator: {
