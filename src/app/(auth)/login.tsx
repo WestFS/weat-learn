@@ -1,15 +1,13 @@
-import { SafeAreaView, StyleSheet, TextInput } from 'react-native';
+import { SafeAreaView, StyleSheet, TextInput, Button, Alert } from 'react-native';
 
 import { Text, View } from '@/src/components/Themed';
 import { useState } from 'react';
 import { useColorScheme } from '@/src/components/useColorScheme';
 import Colors from '@/src/constants/Colors';
+import { useLoginForm } from '@/src/hooks/useLoginForm';
 
 export default function LoginScreen() {
-  const [form, setForm] = useState({
-    email: '',
-    password: '',
-  });
+  const { form, handleChange, handleSubmit } = useLoginForm();
 
   // src/constants/Colors.ts
   const theme = useColorScheme() as 'light' | 'dark';
@@ -39,7 +37,7 @@ export default function LoginScreen() {
                 backgroundColor:Colors[theme].inputBackground,
               }]}
               value={form.email}
-              onChangeText={email => setForm({ ...form, email})}/>
+              onChangeText={text => handleChange('email', text)}/>
             </View>
             <View style={styles.input}>
             <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Password</Text>
@@ -48,15 +46,24 @@ export default function LoginScreen() {
               autoCapitalize='none'
               autoCorrect={false}
               clearButtonMode='while-editing'
-              keyboardType="email-address"
+              keyboardType="default"
               placeholder='********'
               placeholderTextColor='gray'
+              secureTextEntry={true}
               style={[styles.inputControl, {
                 color: "#1A1A1A",
                 backgroundColor:Colors[theme].inputBackground,
               }]}
               value={form.password}
-              onChangeText={password => setForm({ ...form, password})}/>
+              onChangeText={text => handleChange('password', text)}/>
+        <View style={[styles.loginButton]}>
+          <Button
+            title="Login"
+            color={Colors[theme].tint}
+            onPress={handleSubmit}
+          />
+        </View>
+
         </View>
       </View>
     </View>
@@ -104,6 +111,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'solid',
   },
+  loginButton: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#fff'
+  },
+
   separator: {
     marginVertical: 30,
     height: 1,
