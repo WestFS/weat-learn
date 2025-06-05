@@ -1,7 +1,6 @@
 import { SafeAreaView, StyleSheet, TextInput, Button, Alert } from 'react-native';
 
 import { Text, View } from '@/src/components/Themed';
-import { useState } from 'react';
 import { useColorScheme } from '@/src/components/useColorScheme';
 import Colors from '@/src/constants/Colors';
 import { useLoginForm } from '@/src/hooks/useLoginForm';
