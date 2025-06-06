@@ -21,7 +21,7 @@ export default {
 };
 
 /**
-   #### Default color ####
+  #### Default color ####
 const tintColorLight = '#2f95dc';
 const tintColorDark = '#fff';
 
