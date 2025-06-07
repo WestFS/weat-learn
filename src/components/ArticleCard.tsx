@@ -2,13 +2,15 @@ import { FontAwesome } from '@expo/vector-icons';
 import React from 'react';
 import { View, StyleSheet, Image, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import MeshGradientBackground from './MeshGradientBackground';
 
 
 export default function ArticleCard() {
   return(
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <View style={[styles.card, {backgroundColor: "gray"}]}>
+        <MeshGradientBackground/>
+        <View style={[styles.card, {backgroundColor: "#3c0a6b"}]}>
           <Image
             source={{ uri: 'https://picsum.photos/200/200' }}
             style={styles.image}
