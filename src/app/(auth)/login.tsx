@@ -1,29 +1,44 @@
-import { SafeAreaView, StyleSheet, TextInput, Button, Alert } from 'react-native';
+// External libraries (React, React Native)
+import { useState } from 'react';
+import { SafeAreaView, StyleSheet, TextInput, Button, Alert, ActivityIndicator } from 'react-native';
 
+// Internal application components and hooks
 import { Text, View } from '@/src/components/Themed';
 import { useColorScheme } from '@/src/components/useColorScheme';
+import { useAuth } from '@/src/contexts/AuthContext';
 import Colors from '@/src/constants/Colors';
-import { useLoginForm } from '@/src/hooks/useLoginForm';
 
 export default function LoginScreen() {
-  const { form, handleChange, handleSubmit } = useLoginForm();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  // src/constants/Colors.ts
-  const theme = useColorScheme() as 'light' | 'dark';
+  const { signIn, isLoading } = useAuth();
 
+  const theme = useColorScheme() ?? 'light';
 
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in both email and password.');
+      return;
+    }
+
+    try {
+      await signIn({ email, password });
+    } catch (error) {
+      Alert.alert('Login Failed', 'Your credentials are not correct. Please try again.');
+    }
+  };
 
   return(
-    <SafeAreaView style={{flex: 1}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: Colors[theme].background}}>
       <View style={styles.container}>
         <Text style={[styles.title, {color: Colors[theme].text}]}>
             Sign in to <Text style={{ color: '#6a00ec' }}>Weat Learn</Text>
-          </Text>
+        </Text>
 
         <View style={styles.form}>
           <View style={styles.input}>
-            <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Username</Text>
-
+            <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Email</Text>
             <TextInput
               autoCapitalize='none'
               autoCorrect={false}
@@ -32,15 +47,15 @@ export default function LoginScreen() {
               placeholder='someone@example.com'
               placeholderTextColor='gray'
               style={[styles.inputControl, {
-                color: "#1A1A1A",
+                color: Colors[theme].text,
                 backgroundColor:Colors[theme].inputBackground,
               }]}
-              value={form.email}
-              onChangeText={text => handleChange('email', text)}/>
-            </View>
-            <View style={styles.input}>
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+          <View style={styles.input}>
             <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Password</Text>
-
             <TextInput
               autoCapitalize='none'
               autoCorrect={false}
@@ -50,45 +65,49 @@ export default function LoginScreen() {
               placeholderTextColor='gray'
               secureTextEntry={true}
               style={[styles.inputControl, {
-                color: "#1A1A1A",
+                color: Colors[theme].text,
                 backgroundColor:Colors[theme].inputBackground,
               }]}
-              value={form.password}
-              onChangeText={text => handleChange('password', text)}/>
-        <View style={[styles.loginButton]}>
-          <Button
-            title="Login"
-            color={Colors[theme].tint}
-            onPress={handleSubmit}
-          />
-        </View>
-
+              value={password}
+              onChangeText={setPassword}
+            />
+            <View style={[styles.loginButton]}>
+              {isLoading ? (
+                <ActivityIndicator size="large" color={Colors[theme].tint} />
+              ) : (
+                <Button
+                  title="Login"
+                  color={Colors[theme].tint}
+                  onPress={handleSubmit}
+                  disabled={isLoading}
+                />
+              )}
+            </View>
+          </View>
         </View>
       </View>
-    </View>
-  </SafeAreaView>
-);
+    </SafeAreaView>
+  );
 }
 
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
+    flex: 1,
+    justifyContent: 'center',
     padding: 24,
   },
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#929292'
+    color: '#929292',
+    textAlign: 'center',
+    marginBottom: 24,
   },
 
   /** Form */
   form: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 0,
+    width: '100%',
   },
 
   /** Input */
@@ -114,11 +133,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: '#fff'
-  },
-
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
   },
 });

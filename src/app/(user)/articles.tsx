@@ -6,7 +6,7 @@ import ArticleCard from '@/src/components/ArticleCard';
 
 
 
-export default function FeedScreen() {
+export default function ArticleScreen() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
