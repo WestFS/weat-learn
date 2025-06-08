@@ -1,45 +1,23 @@
-const tintColorLight = '#5A4FCF'; // Azul arroxeado elegante
-const tintColorDark = '#BFA8FF';  // Lilás suave com visibilidade no dark
+const tintColorLight = '#5A4FCF';
+const tintColorDark = '#BFA8FF';
 
 export default {
   light: {
-    text: '#1A1A1A',             // Quase preto (mais suave que #000)
-    background: '#F5F4FA',       // Lilás claro quase branco (fundo leve)
-    tint: tintColorLight,        // Para botões, links etc
+    text: '#1A1A1A',
+    background: '#F5F4FA',
+    tint: tintColorLight,
     tabIconDefault: '#AAA',
     tabIconSelected: tintColorLight,
-    inputBackground: '#fff',
+    inputBackground: '#FFFFFF',
+    inputText: '#1A1A1A',
   },
   dark: {
-    text: '#FFFFFF',             // Texto branco para contraste
-    background: '#1D102B',       // Roxo bem escuro com toque azulado
-    tint: tintColorDark,         // Roxo/lilás claro no escuro
+    text: '#FFFFFF',
+    background: '#1D102B',
+    tint: tintColorDark,
     tabIconDefault: '#666',
     tabIconSelected: tintColorDark,
-    inputBackground: '#fff',
+    inputBackground: '#2E1A47',
+    inputText: '#FFFFFF',
   },
 };
-
-/**
-  #### Default color ####
-const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
-
-export default {
-  light: {
-    text: '#000',
-    background: '#fff',
-    tint: tintColorLight,
-    tabIconDefault: '#ccc',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#fff',
-    background: '#000',
-    tint: tintColorDark,
-    tabIconDefault: '#ccc',
-    tabIconSelected: tintColorDark,
-  },
-};
-
- */
