@@ -4,6 +4,7 @@ import { LoginRequest } from '@/src/types/auth';
 
 // we use this for save TOKEN in the storage
 const AUTH_TOKEN_KEY = 'authToken';
+const ADMIN_TOKEN_KEY = 'adminAuthToken';
 
 const fakeDbUser: User = {
   id: '1',
@@ -11,6 +12,14 @@ const fakeDbUser: User = {
   email: 'test@email.com',
   role: 'user',
 };
+
+const fakeAdminUser: User = {
+  id: '99',
+  name: 'Admin User',
+  email: 'admin@email.com',
+  role: 'admin',
+};
+
 
 /**
  * Simulates the sign-in process.
@@ -23,6 +32,13 @@ export const signIn = async (data:LoginRequest): Promise<User> => {
   console.log('[AuthService] Trying to login to:', data.email);
   // Simulate network latency.
   await new Promise(r => setTimeout(r, 700));
+
+  if (data.email === 'admin@email.com' && data.password === 'admin') {
+    const fakeToken =  'token-fake-admin-123';
+    await SecureStore.setItemAsync(ADMIN_TOKEN_KEY,fakeToken);
+    console.log('[AuthService] Login successfully. Saved token');
+    return fakeAdminUser;
+  }
 
   if (data.email === 'test@email.com' && data.password === '123') {
     const fakeToken =  'token-fake-user-123';
@@ -40,8 +56,9 @@ export const signIn = async (data:LoginRequest): Promise<User> => {
  */
 
 export const signOut = async (): Promise<void> => {
-  console.log('[AuthService] Doing LogOut');
+  console.log('[AuthService] Signing out...');
   await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+  await SecureStore.deleteItemAsync(ADMIN_TOKEN_KEY);
   console.log('[AuthService] Removed Token');
 };
 
@@ -55,6 +72,7 @@ export const signOut = async (): Promise<void> => {
 
 export const getProfile = async (): Promise<User> => {
   console.log('[AuthService] Checking if there are any saved sessions...');
+  const adminToken = await SecureStore.getItemAsync(ADMIN_TOKEN_KEY);
   const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
 
   await new Promise(r => setTimeout(r, 700));
@@ -62,6 +80,11 @@ export const getProfile = async (): Promise<User> => {
   if (token) {
     console.log('[AuthService] Session found. Returning user data.');
     return fakeDbUser;
+  }
+
+  if (adminToken) {
+    console.log('[AuthService] Admin session found. Returning admin data.');
+    return fakeAdminUser;
   }
 
   console.log('[AuthService] No sessions found')
