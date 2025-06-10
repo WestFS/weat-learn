@@ -43,6 +43,14 @@ export default function UserTabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="tasks"
+        options={{href: null}}
+      />
+      <Tabs.Screen
+        name="articles"
+        options={{href: null}}
+      />
     </Tabs>
   );
 }
