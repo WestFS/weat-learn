@@ -5,6 +5,7 @@ import {
   Text as ThemedText,
   View as ThemedView,
 } from "@/src/components/Themed";
+import GlassView from "./GlassView";
 
 type CardGridProps = {
   buttons: readonly CardItem[];
@@ -22,13 +23,19 @@ export default function CardGrid({ buttons }: CardGridProps) {
         <Link href={item.path} asChild>
           <Pressable>
             {({ pressed }) => (
-              <ThemedView
-                lightColor={pressed ? "#e0e0e0" : "#f2f2f2"}
-                darkColor={pressed ? "#444444" : "#333333"}
-                style={[styles.squareButton, { opacity: pressed ? 0.7 : 1 }]}
+              <GlassView
+                style={[
+                  styles.squareButton,
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    backgroundColor: pressed
+                      ? "rgba(0, 0, 0, 0.1)"
+                      : "transparent",
+                  },
+                ]}
               >
                 <ThemedText style={styles.buttonText}>{item.label}</ThemedText>
-              </ThemedView>
+              </GlassView>
             )}
           </Pressable>
         </Link>
@@ -51,18 +58,15 @@ const styles = StyleSheet.create({
     height: 140,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    borderRadius: 20,
     marginHorizontal: 8,
   },
   buttonText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#fff",
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
