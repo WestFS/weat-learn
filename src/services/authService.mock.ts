@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { User } from '@/src/types/user';
 import { LoginRequest } from '@/src/types/auth';
+import* as storage from '@/src/services/storageServices'
+
 
 // we use this for save TOKEN in the storage
 const AUTH_TOKEN_KEY = 'authToken';
@@ -35,14 +37,14 @@ export const signIn = async (data:LoginRequest): Promise<User> => {
 
   if (data.email === 'admin@email.com' && data.password === 'admin') {
     const fakeToken =  'token-fake-admin-123';
-    await SecureStore.setItemAsync(ADMIN_TOKEN_KEY,fakeToken);
+    await storage.setItem(ADMIN_TOKEN_KEY,fakeToken);
     console.log('[AuthService] Login successfully. Saved token');
     return fakeAdminUser;
   }
 
   if (data.email === 'test@email.com' && data.password === '123') {
     const fakeToken =  'token-fake-user-123';
-    await SecureStore.setItemAsync(AUTH_TOKEN_KEY,fakeToken);
+    await storage.setItem(AUTH_TOKEN_KEY,fakeToken);
     console.log('[AuthService] Login successfully. Saved token');
     return fakeDbUser;
   }
@@ -57,8 +59,8 @@ export const signIn = async (data:LoginRequest): Promise<User> => {
 
 export const signOut = async (): Promise<void> => {
   console.log('[AuthService] Signing out...');
-  await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(ADMIN_TOKEN_KEY);
+  await storage.deleteItem(AUTH_TOKEN_KEY);
+  await storage.deleteItem(ADMIN_TOKEN_KEY);
   console.log('[AuthService] Removed Token');
 };
 
@@ -72,8 +74,8 @@ export const signOut = async (): Promise<void> => {
 
 export const getProfile = async (): Promise<User> => {
   console.log('[AuthService] Checking if there are any saved sessions...');
-  const adminToken = await SecureStore.getItemAsync(ADMIN_TOKEN_KEY);
-  const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+  const adminToken = await storage.getItem(ADMIN_TOKEN_KEY);
+  const token = await storage.getItem(AUTH_TOKEN_KEY);
 
   await new Promise(r => setTimeout(r, 700));
 
