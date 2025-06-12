@@ -3,10 +3,11 @@ import { View, StyleSheet, useWindowDimensions } from "react-native";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { BlurView } from "expo-blur";
 import { type MeshGradientBackgroundProps } from "@/src/types/ui";
+
 export default function MeshGradientBackground({
   colors,
   tint,
-  intensity = 100,
+  intensity = 80,
 }: MeshGradientBackgroundProps) {
   const { height, width } = useWindowDimensions();
 

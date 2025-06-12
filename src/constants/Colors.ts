@@ -13,11 +13,11 @@ export default {
 
     // MeshGradient (light)
     meshGradient: {
-      base: '#EAEBFF',
-      grad1: '#4A00E0',
-      grad2: '#F3CFC6',
-      grad3: '#FDFD96',
-      grad4: '#C3B1E1',
+      base: '#C3B1E1',
+      grad1: '#957DAD',
+      grad2: '#E0BBE4',
+      grad3: '#A0D9FF',
+      grad4: '#8A2BE2',
     },
   },
   dark: {
@@ -32,10 +32,10 @@ export default {
     // MeshGradient (dark)
     meshGradient: {
       base: '#1A1D4D',
-      grad1: '#E54D4D',
-      grad2: '#4A00E0',
-      grad3: '#D6E4FF',
-      grad4: '#D94A5C',
+      grad1: '#6A057F',
+      grad2: '#9B59B6',
+      grad3: '#4B0082',
+      grad4: '#FFC0CB',
     },
   },
 };

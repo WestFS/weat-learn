@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   row: {
-    justifyContent: "space-between",
+    justifyContent: "space-evenly",
     marginBottom: 16,
   },
   squareButton: {
