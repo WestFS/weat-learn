@@ -10,6 +10,7 @@ interface GlassViewProps extends ViewProps {
   intensity?: number;
   tint?: BlurTint;
   hasShadow?: boolean;
+  borderRadius?: number;
 }
 
 export default function GlassView({
@@ -18,6 +19,7 @@ export default function GlassView({
   intensity = 50,
   tint,
   hasShadow = false,
+  borderRadius = 0,
   ...props
 }: GlassViewProps) {
   const theme = useColorScheme() ?? "light";
@@ -26,28 +28,31 @@ export default function GlassView({
   const borderStyle =
     theme === "light"
       ? {
-          // Light
-          borderBottomColor: "rgba(0, 0, 0, 0.1)",
-          borderRightColor: "rgba(0, 0, 0, 0.1)",
-          borderTopColor: "rgba(255, 255, 255, 0.5)",
-          borderLeftColor: "rgba(255, 255, 255, 0.5)",
-        }
+        // Light
+        borderBottomColor: "rgba(0, 0, 0, 0.1)",
+        borderRightColor: "rgba(0, 0, 0, 0.1)",
+        borderTopColor: "rgba(255, 255, 255, 0.5)",
+        borderLeftColor: "rgba(255, 255, 255, 0.5)",
+      }
       : {
-          // Dark
-          borderBottomColor: "rgba(0, 0, 0, 0.5)",
-          borderRightColor: "rgba(0, 0, 0, 0.5)",
-          borderTopColor: "rgba(255, 255, 255, 0.2)",
-          borderLeftColor: "rgba(255, 255, 255, 0.2)",
-        };
+        // Dark
+        borderBottomColor: "rgba(0, 0, 0, 0.5)",
+        borderRightColor: "rgba(0, 0, 0, 0.5)",
+        borderTopColor: "rgba(255, 255, 255, 0.2)",
+        borderLeftColor: "rgba(255, 255, 255, 0.2)",
+      };
+
+
+  const shadowColor = theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : '#000';
 
   const shadowStyle = hasShadow
     ? {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 5,
-      }
+      shadowColor: shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: theme === 'light' ? 0.1 : 0.4,
+      shadowRadius: 12,
+      elevation: 5,
+    }
     : {};
 
   return (
@@ -69,5 +74,6 @@ const styles = StyleSheet.create({
   container: {
     overflow: "hidden",
     borderWidth: 1,
+    backgroundColor: 'transparent',
   },
 });

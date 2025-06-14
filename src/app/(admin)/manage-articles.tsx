@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -16,16 +17,24 @@ import {
 import { useColorScheme } from "@/src/components/useColorScheme";
 import Colors from "@/src/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
-import HTML from "react-native-render-html";
+import HTML, { RenderHTMLProps } from "react-native-render-html";
 import GlassView from "@/src/components/GlassView";
 import { marked } from "marked";
+import { Publication } from "@/src/types/publication";
+import { useRouter } from "expo-router";
 
 export default function ManageArticleScreen() {
   const theme = useColorScheme() ?? "light";
   const { width } = useWindowDimensions();
+  const router = useRouter();
 
   // State for article content in Markdown
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
   const [articleMarkdownContent, setArticleMarkdownContent] = useState("");
+  const [mainImageUrl, setMainImageUrl] = useState<string | undefined>(
+    undefined
+  );
 
   // States for input focus (for the "light" effect)
   const [isTitleFocused, setIsTitleFocused] = useState(false);
@@ -59,9 +68,9 @@ export default function ManageArticleScreen() {
     // 1. Request media library permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      alert(
-        "Permission Denied" +
-          "\nWe need access to your gallery to add images to the article."
+      Alert.alert(
+        "Permission Denied",
+        "We need access to your gallery to add images to the article."
       );
       return;
     }
@@ -77,11 +86,15 @@ export default function ManageArticleScreen() {
 
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-      alert(
-        "Image Upload (Simulated)" +
-          "The image has been selected. In production, it would be uploaded to your storage service, and the real URL would be used."
+      Alert.alert(
+        "Image Upload (Simulated)",
+        "The image has been selected. In production, it would be uploaded to your storage service, and the real URL would be used."
       );
       const imageUrl = uri; // Using local URI for now for preview testing
+
+      if (!mainImageUrl) {
+        setMainImageUrl(imageUrl);
+      }
 
       const markdownImage = `![Added Image](${imageUrl})\n\n`;
 
@@ -113,7 +126,40 @@ export default function ManageArticleScreen() {
     }
   };
 
-  const articleHtmlContent = marked(articleMarkdownContent);
+  const articleHtmlContent = marked.parse(articleMarkdownContent) as string;
+
+  const handlePublish = () => {
+    if (!title || !summary || !articleMarkdownContent) {
+      Alert.alert(
+        "Missing Information",
+        "Please fill in all fields (Title, Summary, Article Content) before publishing."
+      );
+      return;
+    }
+
+    const newPublication: Omit<
+      Publication,
+      "id" | "createdAt" | "updatedAt" | "slug"
+    > = {
+      title,
+      tags: [],
+      author: "Admin User", // Placeholder author
+      summary,
+      content: articleHtmlContent, // Store the HTML content
+      imageUrl:
+        mainImageUrl ||
+        "https://placehold.co/600x400/purple/white?text=No+Image", // Use main image or a placeholder
+    };
+
+    setTitle("");
+    setSummary("");
+    setArticleMarkdownContent("");
+    setMainImageUrl(undefined);
+    setIsTitleFocused(false);
+    setIsSummaryFocused(false);
+    setIsArticleFocused(false);
+    setArticleSelection({ start: 0, end: 0 });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -140,7 +186,8 @@ export default function ManageArticleScreen() {
             ]}
             onFocus={() => setIsTitleFocused(true)}
             onBlur={() => setIsTitleFocused(false)}
-            // Add value and onChangeText for title
+            onChangeText={setTitle}
+            value={title}
           />
 
           <ThemedText style={styles.label}>Summary:</ThemedText>
@@ -155,9 +202,10 @@ export default function ManageArticleScreen() {
               },
             ]}
             multiline
+            onChangeText={setSummary}
+            value={summary}
             onFocus={() => setIsSummaryFocused(true)}
             onBlur={() => setIsSummaryFocused(false)}
-            // Add value and onChangeText for summary
           />
 
           <ThemedText style={styles.label}>Article:</ThemedText>
@@ -257,13 +305,22 @@ export default function ManageArticleScreen() {
               </ThemedText>
             )}
           </GlassView>
+
+          <TouchableOpacity
+            style={styles.publishButton}
+            onPress={handlePublish}
+          >
+            <ThemedText style={styles.publishButtonText}>
+              Publish Article
+            </ThemedText>
+          </TouchableOpacity>
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
   );
 }
 // --- HTML Tag Styles ---
-const htmlTagsStyles = {
+const htmlTagsStyles: RenderHTMLProps["tagsStyles"] = {
   p: {
     fontSize: 16,
     lineHeight: 24,
@@ -314,7 +371,6 @@ const htmlTagsStyles = {
 };
 
 // --- Component Styles ---
-// (MOVED TO THE END)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -391,6 +447,20 @@ const styles = StyleSheet.create({
   insertImageButtonText: {
     color: "white",
     fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  publishButton: {
+    backgroundColor: Colors.light.tint,
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  publishButtonText: {
+    color: "white",
+    fontSize: 18,
     fontWeight: "bold",
   },
 

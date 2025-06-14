@@ -1,49 +1,70 @@
-import { FontAwesome } from "@expo/vector-icons";
 import React from "react";
-import { View, StyleSheet, Image, Text } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { GradientBackground } from "./Themed";
+import { View, StyleSheet, Image, Text, TouchableOpacity } from "react-native";
+import { useColorScheme } from "@/src/components/useColorScheme";
+import Colors from "@/src/constants/Colors";
+import { Publication } from "@/src/types/publication";
+import GlassView from "@/src/components/GlassView";
 
-export default function ArticleCard() {
+interface ArticleCardProps {
+  publication: Publication;
+  onPress: (publication: Publication) => void;
+}
+
+export default function ArticleCard({
+  publication,
+  onPress,
+}: ArticleCardProps) {
+  const theme = useColorScheme() ?? "light";
+  const textColor = Colors[theme].text;
+  const glassCardBackgroundColor = theme === 'light' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.5)';
+
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <GradientBackground />
-        <View style={[styles.card, { backgroundColor: "#3c0a6b" }]}>
-          <Image
-            source={{ uri: "https://picsum.photos/200/200" }}
-            style={styles.image}
-          />
-          <View style={styles.content}>
-            <Text style={styles.title} numberOfLines={1}>
-              {" "}
-              Lorem ipsum dolor sit ametaaaa{" "}
-            </Text>
-            <Text style={styles.sumary} numberOfLines={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc
-              felis metus, dapibus eu ultrices sit amet, elementum sit amet dui.
-              ttrttttttttttttttttt
-            </Text>
-          </View>
+    <TouchableOpacity
+      onPress={() => onPress(publication)}
+      style={styles.cardContainerWrapper}
+    >
+      <GlassView
+        style={[
+          styles.glassCard,
+          { backgroundColor: glassCardBackgroundColor }
+        ]}
+        borderRadius={8}
+        hasShadow={true}
+        intensity={theme === 'light' ? 50 : 80}
+      >
+        <Image
+          source={{
+            uri:
+              publication.imageUrl ||
+              "https://picsum.photos/200/200",
+          }}
+          style={styles.image}
+          onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
+        />
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: textColor }]} numberOfLines={1}>
+            {publication.title}
+          </Text>
+          <Text style={[styles.summary, { color: textColor }]} numberOfLines={4}>
+            {publication.summary}
+          </Text>
         </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+      </GlassView>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-
-  card: {
-    flexDirection: "row", // <-- linha horizontal
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 8,
+  cardContainerWrapper: {
     marginVertical: 8,
     width: "100%",
+  },
+
+  glassCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "transparent",
   },
 
   image: {
@@ -51,21 +72,17 @@ const styles = StyleSheet.create({
     width: 100,
     borderRadius: 8,
     marginRight: 14,
+    backgroundColor: "#E0E0E0",
   },
-
   content: {
     flex: 1,
   },
-
   title: {
-    fontSize: 14,
-    fontWeight: 500,
+    fontSize: 16,
+    fontWeight: "bold",
   },
-
-  sumary: {
+  summary: {
     fontSize: 12,
     marginTop: 4,
-    color: "#555",
-    width: "100%",
   },
 });

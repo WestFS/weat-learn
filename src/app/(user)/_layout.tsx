@@ -45,7 +45,8 @@ export default function UserTabLayout() {
         }}
       />
       <Tabs.Screen name="tasks" options={{ href: null }} />
-      <Tabs.Screen name="articles" options={{ href: null }} />
+      <Tabs.Screen name="articles/index" options={{ href: null }} />
+      <Tabs.Screen name="articles/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
