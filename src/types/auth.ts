@@ -16,4 +16,5 @@ export type AuthContextState = {
   isLoading: boolean;
   signIn: (data: LoginRequest) => Promise<void>;
   signOut: () => void;
+  signUp: (data: LoginRequest) => Promise<User | null>
 };

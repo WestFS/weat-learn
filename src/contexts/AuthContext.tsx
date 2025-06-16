@@ -1,9 +1,10 @@
-import { createContext, useContext, ReactNode, useCallback} from "react";
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { createContext, useContext, ReactNode, useCallback, useEffect } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthUser, userQueryKey } from '@/src/hooks/useAuthUser';
-import * as authService from '@/src/services/authService.mock';
+import * as AuthService from '@/src/services/authService';
 import { AuthContextState, LoginRequest } from '@/src/types/auth';
 import { User } from '@/src/types/user';
+
 
 
 // Create the context with a default placeholder value.
@@ -22,17 +23,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, isLoading, isError } = useAuthUser();
 
 
-/**
-* Handles the sign-in logic. It calls the auth service and, on success,
-* manually updates the TanStack Query cache with the new user data.
-*/
+  useEffect(() => {
+    const { unsubscribe } = AuthService.onAuthStateChange((Event, session) => {
+      console.log('Auth State Change Event in AuthContext:', Event);
+      // This makes TanStack Query refetch the profile, keeping UI in sync.
+      if (Event === 'SIGNED_IN' || Event === 'SIGNED_OUT') {
+        queryClient.invalidateQueries({ queryKey: userQueryKey });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [queryClient]);
+
+
+  /**
+  * Handles the sign-in logic. It calls the auth service and, on success,
+  * manually updates the TanStack Query cache with the new user data.
+  */
 
   const signIn = useCallback(async (data: LoginRequest) => {
     try {
-      const isLoggedInUser = await authService.signIn(data);
+      const loggedInUser = await AuthService.signIn(data);
       // Manually set the query data in the cache to the logged-in user.
       // This immediately updates the UI without needing a re-fetch.
-      queryClient.setQueryData(userQueryKey, isLoggedInUser);
+      queryClient.setQueryData(userQueryKey, loggedInUser);
     } catch (error) {
       console.error('Failed to SignIn:', error);
       throw error;
@@ -45,10 +59,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * data from the TanStack Query cache.
    */
   const signOut = useCallback(async () => {
-    await authService.signOut();
+    await AuthService.signOut();
     // Set the user query data to null to reflect the signed-out state.
     queryClient.setQueryData(userQueryKey, null);
   }, [queryClient])
+
+
+  /**
+   * Handles the sign-up logic by calling the real auth service and, on success,
+   * updates the user data in the TanStack Query cache if the user is automatically logged in.
+   */
+  const signUp = useCallback(async (data: LoginRequest): Promise<User | null> => {
+    try {
+      const signedUpUser = await AuthService.signUp(data);
+      if (signedUpUser) {
+        queryClient.setQueryData(userQueryKey, signedUpUser);
+      }
+      return signedUpUser;
+    } catch (error) {
+      console.error('Failed to SignUp:', error);
+      throw error;
+    }
+  }, [queryClient]);
 
   // The value object that will be provided to all consuming components.
   const value: AuthContextState = {
@@ -57,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     signIn,
     signOut,
+    signUp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

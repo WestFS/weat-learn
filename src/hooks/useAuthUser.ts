@@ -1,19 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { getProfile } from '@/src/services/authService.mock';
+import { User } from '@/src/types/user'
+import { getProfile } from '@/src/services/authService';
 
 // A unique key to identify this query in the TanStack Query cache.
-export const userQueryKey = ['get-current-user']
+export const userQueryKey = ['userProfile']
 
-/**
- * A custom hook to fetch the current authenticated user's profile.
- * It wraps the useQuery logic for reusability and cleaner component code.
- */
 
 export function useAuthUser() {
-    return useQuery({
-      queryKey: userQueryKey,
-      queryFn: getProfile,
-      retry: false,
-      staleTime: Infinity, // The user data is considered fresh forever unless invalidated.
-    })
+  const queryResult = useQuery<User, Error>({
+    queryKey: userQueryKey,
+    queryFn: getProfile,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
+  return queryResult
 }
