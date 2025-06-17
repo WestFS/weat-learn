@@ -44,19 +44,21 @@ function RootLayoutNav() {
     SplashScreen.hideAsync();
 
     if (isLoggedIn) {
-      if(user?.role === 'admin') {
+      console.log('User is logged in. User ID:', user?.id, 'Role:', user?.role)
+      if (user?.role === 'admin') {
         router.replace('/(admin)/home');
       } else if (user?.role === 'user') {
         router.replace('/(user)/home');
       } else {
-        console.error('Error attempting to login',user?.role);
+        console.error('Error attempting to login', user?.role);
         router.replace('/(auth)/login')
       }
     } else {
       // If the user is not logged in, ensure they are in the auth flow.
+      console.log('User is NOT logged in. Redirecting to login.');
       router.replace('/(auth)/login');
     }
-  }, [isLoading, isLoggedIn]);  // This effect re-runs whenever the loading or logged-in state changes.
+  }, [isLoading, isLoggedIn, user?.role, user?.id, router]);  // This effect re-runs whenever the loading or logged-in state changes.
 
   if (isLoading) {
     return null;
