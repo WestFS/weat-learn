@@ -39,3 +39,6 @@ yarn-error.*
 # Supabase
 .branches
 .temp
+
+#tables
+database.local
