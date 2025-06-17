@@ -17,7 +17,7 @@ import {
 import { useColorScheme } from "@/src/components/useColorScheme";
 import Colors from "@/src/constants/Colors";
 import HTML, { RenderHTMLProps } from "react-native-render-html";
-import { Publication } from "@/src/types/publication";
+import { Publication } from "@/src/types/article";
 import * as ArticleService from "@/src/services/articleService"; // Import the article service
 
 import { useLocalSearchParams, useRouter } from "expo-router";

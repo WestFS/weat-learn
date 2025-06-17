@@ -1,6 +1,7 @@
-// External libraries (React, React Native)
+// External libraries (React, React Native, Expo)
 import { useState } from 'react';
 import { SafeAreaView, StyleSheet, TextInput, Button, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 
 // Internal application components and hooks
 import { Text, View } from '@/src/components/Themed';
@@ -12,11 +13,11 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { signIn, isLoading } = useAuth();
+  const { signIn, signUp, isLoading } = useAuth();
 
   const theme = useColorScheme() ?? 'light';
 
-  const handleSubmit = async () => {
+  const handleLoginSubmit = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in both email and password.');
       return;
@@ -24,21 +25,39 @@ export default function LoginScreen() {
 
     try {
       await signIn({ email, password });
-    } catch (error) {
-      Alert.alert('Login Failed', 'Your credentials are not correct. Please try again.');
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Your credentials are not correct. Please try again.');
     }
   };
 
-  return(
-    <SafeAreaView style={{flex: 1, backgroundColor: Colors[theme].background}}>
+  const handleSignUpSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in both email and password.');
+      return;
+    }
+
+    try {
+      const registeredUser = await signUp({ email, password });
+      if (registeredUser === null) {
+        Alert.alert('Registration Successful!', 'Please check your email to confirm your account.');
+      } else {
+        Alert.alert('Registration Successful!', 'Welcome! You are now logged in.');
+      }
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.message || 'Could not register. Please try again.');
+    }
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors[theme].background }}>
       <View style={styles.container}>
-        <Text style={[styles.title, {color: Colors[theme].text}]}>
-            Sign in to <Text style={{ color: '#6a00ec' }}>Weat Learn</Text>
+        <Text style={[styles.title, { color: Colors[theme].text }]}>
+          Sign in to <Text style={{ color: '#6a00ec' }}>Weat Learn</Text>
         </Text>
 
         <View style={styles.form}>
           <View style={styles.input}>
-            <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Email</Text>
+            <Text style={[styles.inputLabel, { color: Colors[theme].text }]}>Email</Text>
             <TextInput
               autoCapitalize='none'
               autoCorrect={false}
@@ -48,14 +67,14 @@ export default function LoginScreen() {
               placeholderTextColor='gray'
               style={[styles.inputControl, {
                 color: Colors[theme].text,
-                backgroundColor:Colors[theme].inputBackground,
+                backgroundColor: Colors[theme].inputBackground,
               }]}
               value={email}
               onChangeText={setEmail}
             />
           </View>
           <View style={styles.input}>
-            <Text style={[styles.inputLabel, {color: Colors[theme].text}]}>Password</Text>
+            <Text style={[styles.inputLabel, { color: Colors[theme].text }]}>Password</Text>
             <TextInput
               autoCapitalize='none'
               autoCorrect={false}
@@ -66,7 +85,7 @@ export default function LoginScreen() {
               secureTextEntry={true}
               style={[styles.inputControl, {
                 color: Colors[theme].text,
-                backgroundColor:Colors[theme].inputBackground,
+                backgroundColor: Colors[theme].inputBackground,
               }]}
               value={password}
               onChangeText={setPassword}
@@ -75,18 +94,27 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator size="large" color={Colors[theme].tint} />
               ) : (
-                <Button
-                  title="Login"
-                  color={Colors[theme].tint}
-                  onPress={handleSubmit}
-                  disabled={isLoading}
-                />
+                <>
+                  <Button
+                    title="Login"
+                    color={Colors[theme].tint}
+                    onPress={handleLoginSubmit}
+                    disabled={isLoading}
+                  />
+                  <View style={{ height: 10 }} />
+                  <Button
+                    title="Register"
+                    color={Colors[theme].tint}
+                    onPress={handleSignUpSubmit}
+                    disabled={isLoading}
+                  />
+                </>
               )}
             </View>
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 

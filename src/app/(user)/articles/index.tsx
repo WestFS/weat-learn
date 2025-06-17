@@ -7,7 +7,7 @@ import {
   GradientBackground,
 } from "@/src/components/Themed";
 import ArticleCard from "@/src/components/ArticleCard";
-import { Publication } from "@/src/types/publication";
+import { Publication } from "@/src/types/article";
 import { useColorScheme } from "@/src/components/useColorScheme";
 import Colors from "@/src/constants/Colors";
 import * as ArticleService from "@/src/services/articleService";

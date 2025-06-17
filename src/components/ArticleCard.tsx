@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, Image, Text, TouchableOpacity } from "react-native";
 import { useColorScheme } from "@/src/components/useColorScheme";
 import Colors from "@/src/constants/Colors";
-import { Publication } from "@/src/types/publication";
+import { Publication } from "@/src/types/article";
 import GlassView from "@/src/components/GlassView";
 
 interface ArticleCardProps {

@@ -20,13 +20,15 @@ import * as ImagePicker from "expo-image-picker";
 import HTML, { RenderHTMLProps } from "react-native-render-html";
 import GlassView from "@/src/components/GlassView";
 import { marked } from "marked";
-import { Publication } from "@/src/types/publication";
+import { Article } from "@/src/types/article";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function ManageArticleScreen() {
   const theme = useColorScheme() ?? "light";
   const { width } = useWindowDimensions();
   const router = useRouter();
+  const { user, isLoggedIn, isLoading } = useAuth()
 
   // State for article content in Markdown
   const [title, setTitle] = useState("");
@@ -79,7 +81,8 @@ export default function ManageArticleScreen() {
       mediaTypes: ["images"],
       allowsEditing: true, // Allows user to edit/crop the image
       aspect: [4, 3], // Aspect ratio
-      quality: 1, // Upload quality
+      quality: 0.7, // Upload quality
+      base64: true,
     });
 
     // 3. TODO: Implement actual image upload to your Object Storage (Firebase Storage, S3, etc.)
@@ -138,7 +141,7 @@ export default function ManageArticleScreen() {
     }
 
     const newPublication: Omit<
-      Publication,
+      Article,
       "id" | "createdAt" | "updatedAt" | "slug"
     > = {
       title,

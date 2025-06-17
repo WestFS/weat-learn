@@ -1,6 +1,7 @@
-import { supabase } from "../utils/supabase";
+import { supabase } from "@/src/utils/supabase";
 import { User } from "../types/user";
 import { LoginRequest } from "../types";
+import { Session } from '@supabase/supabase-js';
 
 const mapSupabaseUserToAppUser = (supabaseUser: any): User => {
 
@@ -147,15 +148,17 @@ export const getProfile = async (): Promise<User> => {
 };
 
 
+
+
 /**
  * Subscribes to authentication state change events from Supabase.
  * Useful for reacting to logins/logouts in real-time
  * @param callback - Function to be called with (event, session).
  * @returns An object with an `unsubscribe` method to stop listening.
  */
-export const onAuthStateChange = (callback: (event: string, session: any | null) => void) => {
+export const onAuthStateChange = (callback: (event: string, session: Session | null) => void) => {
   console.log('[AuthService] Subscribing to auth state changes.');
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
     callback(event, session);
   });
   return { unsubscribe: () => subscription.unsubscribe() };
