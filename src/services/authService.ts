@@ -17,6 +17,89 @@ const mapSupabaseUserToAppUser = (supabaseUser: any): User => {
   };
 };
 
+/**
+ * Handles email confirmation from Supabase
+ * @returns Promise that resolves when confirmation is complete
+ */
+export const confirmEmail = async (): Promise<{ success: boolean; message: string }> => {
+  console.log('[AuthService] Attempting to confirm email...');
+  
+  try {
+    // Check if we're on web and have URL parameters
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const accessToken = url.hash.match(/access_token=([^&]*)/)?.[1];
+      const refreshToken = url.hash.match(/refresh_token=([^&]*)/)?.[1];
+      const error = url.hash.match(/error=([^&]*)/)?.[1];
+      const errorDescription = url.hash.match(/error_description=([^&]*)/)?.[1];
+
+      console.log('[AuthService] URL parameters found:', { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken, 
+        error, 
+        errorDescription 
+      });
+
+      if (error) {
+        console.error('[AuthService] Email confirmation error from URL:', error, errorDescription);
+        return { 
+          success: false, 
+          message: `Confirmation failed: ${errorDescription || error}` 
+        };
+      }
+
+      if (accessToken && refreshToken) {
+        console.log('[AuthService] Setting session with tokens...');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: decodeURIComponent(accessToken),
+          refresh_token: decodeURIComponent(refreshToken),
+        });
+
+        if (sessionError) {
+          console.error('[AuthService] Session error:', sessionError);
+          return { 
+            success: false, 
+            message: `Session error: ${sessionError.message}` 
+          };
+        }
+
+        // Clear the URL hash
+        window.location.hash = '';
+        console.log('[AuthService] Email confirmed successfully');
+        return { success: true, message: 'Email confirmed successfully!' };
+      }
+    }
+
+    // Try to get the current session
+    console.log('[AuthService] Checking current session...');
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('[AuthService] Session check error:', error);
+      return { 
+        success: false, 
+        message: `Session error: ${error.message}` 
+      };
+    }
+
+    if (data.session) {
+      console.log('[AuthService] Valid session found');
+      return { success: true, message: 'Email confirmed successfully!' };
+    } else {
+      console.log('[AuthService] No valid session found');
+      return { 
+        success: false, 
+        message: 'No valid session found. Please try logging in again.' 
+      };
+    }
+  } catch (error: any) {
+    console.error('[AuthService] Email confirmation error:', error);
+    return { 
+      success: false, 
+      message: `Unexpected error: ${error.message}` 
+    };
+  }
+};
 
 /**
  * Simulates the sign-in process.
@@ -71,7 +154,8 @@ export const signUp = async (data: LoginRequest): Promise<User | null> => {
         data: {
           role: 'user', // default role to 'user'
           full_name: data.email.split('@')[0], // initial name
-        }
+        },
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth-callback` : undefined,
       }
     });
 
@@ -81,10 +165,8 @@ export const signUp = async (data: LoginRequest): Promise<User | null> => {
     }
 
     if (authData.user) {
-
       console.log('[AuthService] User signed up:', authData.user.id);
       return mapSupabaseUserToAppUser(authData.user);
-
     } else {
       console.log('[AuthService] Sign up initiated. Please check your email for confirmation.');
       return null;
@@ -94,7 +176,6 @@ export const signUp = async (data: LoginRequest): Promise<User | null> => {
     throw error
   }
 };
-
 
 /**
  * Handles the user sign-out process using Supabase Auth.
@@ -115,7 +196,6 @@ export const signOut = async (): Promise<void> => {
     throw error;
   }
 };
-
 
 /**
  * Fetches the currently authenticated user's.
@@ -147,9 +227,6 @@ export const getProfile = async (): Promise<User> => {
   }
 };
 
-
-
-
 /**
  * Subscribes to authentication state change events from Supabase.
  * Useful for reacting to logins/logouts in real-time
@@ -162,4 +239,43 @@ export const onAuthStateChange = (callback: (event: string, session: Session | n
     callback(event, session);
   });
   return { unsubscribe: () => subscription.unsubscribe() };
+};
+
+/**
+ * Resends email confirmation for a user
+ * @param email - The email address to resend confirmation to
+ * @returns Promise that resolves when email is sent
+ */
+export const resendEmailConfirmation = async (email: string): Promise<{ success: boolean; message: string }> => {
+  console.log('[AuthService] Resending email confirmation to:', email);
+  
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth-callback` : undefined,
+      }
+    });
+
+    if (error) {
+      console.error('[AuthService] Resend email error:', error.message);
+      return { 
+        success: false, 
+        message: `Failed to resend email: ${error.message}` 
+      };
+    }
+
+    console.log('[AuthService] Email confirmation resent successfully');
+    return { 
+      success: true, 
+      message: 'Confirmation email sent! Please check your inbox.' 
+    };
+  } catch (error: any) {
+    console.error('[AuthService] Resend email error:', error);
+    return { 
+      success: false, 
+      message: `Unexpected error: ${error.message}` 
+    };
+  }
 };

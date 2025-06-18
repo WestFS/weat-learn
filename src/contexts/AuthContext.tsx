@@ -1,11 +1,9 @@
-import { createContext, useContext, ReactNode, useCallback, useEffect } from "react";
+import { createContext, useContext, ReactNode, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthUser, userQueryKey } from '@/src/hooks/useAuthUser';
 import * as AuthService from '@/src/services/authService';
 import { AuthContextState, LoginRequest } from '@/src/types/auth';
 import { User } from '@/src/types/user';
-
-
 
 // Create the context with a default placeholder value.
 const AuthContext = createContext<AuthContextState>({} as AuthContextState);
@@ -18,12 +16,20 @@ const AuthContext = createContext<AuthContextState>({} as AuthContextState);
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Get the QueryClient instance to manipulate the cache.
   const queryClient = useQueryClient();
+  const [isClient, setIsClient] = useState(false);
 
   // Fetch the user data using our custom hook. This is the "source of truth".
   const { data: user, isLoading, isError } = useAuthUser();
 
+  // Handle SSR - only run auth logic on client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
+    // Only set up auth state change listener on client side
+    if (!isClient) return;
+
     const { unsubscribe } = AuthService.onAuthStateChange((Event, session) => {
       console.log('Auth State Change Event in AuthContext:', Event);
       // This makes TanStack Query refetch the profile, keeping UI in sync.
@@ -33,8 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [queryClient]);
-
+  }, [queryClient, isClient]);
 
   /**
   * Handles the sign-in logic. It calls the auth service and, on success,
@@ -42,6 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   */
 
   const signIn = useCallback(async (data: LoginRequest) => {
+    if (!isClient) {
+      throw new Error('Authentication is only available on the client side');
+    }
+
     try {
       const loggedInUser = await AuthService.signIn(data);
       // Manually set the query data in the cache to the logged-in user.
@@ -51,25 +60,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Failed to SignIn:', error);
       throw error;
     }
-  }, [queryClient])
-
+  }, [queryClient, isClient]);
 
   /**
    * Handles the sign-out logic by calling the service and clearing the user
    * data from the TanStack Query cache.
    */
   const signOut = useCallback(async () => {
+    if (!isClient) {
+      throw new Error('Authentication is only available on the client side');
+    }
+
     await AuthService.signOut();
     // Set the user query data to null to reflect the signed-out state.
     queryClient.setQueryData(userQueryKey, null);
-  }, [queryClient])
-
+  }, [queryClient, isClient]);
 
   /**
    * Handles the sign-up logic by calling the real auth service and, on success,
    * updates the user data in the TanStack Query cache if the user is automatically logged in.
    */
   const signUp = useCallback(async (data: LoginRequest): Promise<User | null> => {
+    if (!isClient) {
+      throw new Error('Authentication is only available on the client side');
+    }
+
     try {
       const signedUpUser = await AuthService.signUp(data);
       if (signedUpUser) {
@@ -80,13 +95,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Failed to SignUp:', error);
       throw error;
     }
-  }, [queryClient]);
+  }, [queryClient, isClient]);
 
   // The value object that will be provided to all consuming components.
   const value: AuthContextState = {
-    user,  // The user is considered logged in if the query was successful and returned data.
-    isLoggedIn: !!user && !isError,  // The loading state comes directly from the useQuery hook.
-    isLoading,
+    user: isClient ? user : null,  // Only show user on client side
+    isLoggedIn: isClient && !!user && !isError,  // Only logged in on client side
+    isLoading: !isClient || isLoading,  // Show loading during SSR
     signIn,
     signOut,
     signUp,

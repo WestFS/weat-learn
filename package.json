@@ -21,6 +21,8 @@
     "expo": "53.0.11",
     "expo-blur": "~14.1.5",
     "expo-font": "~13.3.1",
+    "expo-image": "~1.10.6",
+    "expo-image-manipulator": "~13.0.1",
     "expo-image-picker": "^16.1.4",
     "expo-linking": "~7.1.5",
     "expo-router": "~5.1.0",
@@ -39,7 +41,9 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-url-polyfill": "^2.0.0",
-    "react-native-web": "~0.20.0"
+    "react-native-web": "~0.20.0",
+    "updates": "^16.4.2",
+    "upgrade": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

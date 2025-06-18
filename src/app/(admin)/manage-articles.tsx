@@ -17,12 +17,13 @@ import {
 import { useColorScheme } from "@/src/components/useColorScheme";
 import Colors from "@/src/constants/Colors";
 import * as ImagePicker from "expo-image-picker";
-import HTML, { RenderHTMLProps } from "react-native-render-html";
-import GlassView from "@/src/components/GlassView";
 import { marked } from "marked";
 import { Article } from "@/src/types/article";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/src/contexts/AuthContext";
+import RichTextEditor from "@/src/components/RichTextEditor";
+import DevicePreview from "@/src/components/DevicePreview";
+import GlassView from "@/src/components/GlassView";
 
 export default function ManageArticleScreen() {
   const theme = useColorScheme() ?? "light";
@@ -41,29 +42,9 @@ export default function ManageArticleScreen() {
   // States for input focus (for the "light" effect)
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [isSummaryFocused, setIsSummaryFocused] = useState(false);
-  const [isArticleFocused, setIsArticleFocused] = useState(false);
 
-  // Ref for the article TextInput (needed to manipulate cursor)
-  const articleTextInputRef = useRef<TextInput>(null);
-
-  // State to store the current selection of the article TextInput
-  const [articleSelection, setArticleSelection] = useState({
-    start: 0,
-    end: 0,
-  });
-
-  // State to control preview display mode: 'mobile' or 'web'
-  const [previewMode, setPreviewMode] = useState("mobile");
-
-  // Function to determine preview width based on the selected mode
-  const getPreviewWidth = () => {
-    const containerPadding = 20 * 2;
-    if (previewMode === "mobile") {
-      return width - containerPadding;
-    } else {
-      return Math.min(width - containerPadding, 768);
-    }
-  };
+  // State to control preview display mode: 'mobile', 'tablet', or 'desktop'
+  const [previewMode, setPreviewMode] = useState<"mobile" | "tablet" | "desktop">("mobile");
 
   // Function to handle image selection and insertion
   const handleImagePicker = async () => {
@@ -100,32 +81,7 @@ export default function ManageArticleScreen() {
       }
 
       const markdownImage = `![Added Image](${imageUrl})\n\n`;
-
-      const start = articleSelection.start;
-      const end = articleSelection.end;
-
-      let newArticleContent =
-        articleMarkdownContent.substring(0, start) +
-        markdownImage +
-        articleMarkdownContent.substring(end);
-
-      setArticleMarkdownContent(newArticleContent);
-
-      if (articleTextInputRef.current) {
-        const newCursorPosition = start + markdownImage.length;
-        if (
-          Platform.OS !== "web" &&
-          articleTextInputRef.current.setNativeProps
-        ) {
-          articleTextInputRef.current.setNativeProps({
-            selection: { start: newCursorPosition, end: newCursorPosition },
-          });
-        } else if (Platform.OS === "web") {
-          console.warn(
-            "Moving cursor after image insertion is not fully supported in Expo Web via setNativeProps"
-          );
-        }
-      }
+      setArticleMarkdownContent(prev => prev + markdownImage);
     }
   };
 
@@ -142,16 +98,18 @@ export default function ManageArticleScreen() {
 
     const newPublication: Omit<
       Article,
-      "id" | "createdAt" | "updatedAt" | "slug"
+      "id" | "created_at" | "updated_at" | "slug"
     > = {
       title,
-      tags: [],
-      author: "Admin User", // Placeholder author
+      article_tag: 'article',
+      author_id: user?.id || '',
+      author: user?.email || "Admin User",
       summary,
       content: articleHtmlContent, // Store the HTML content
-      imageUrl:
+      main_image_url:
         mainImageUrl ||
         "https://placehold.co/600x400/purple/white?text=No+Image", // Use main image or a placeholder
+      is_published: true,
     };
 
     setTitle("");
@@ -160,8 +118,6 @@ export default function ManageArticleScreen() {
     setMainImageUrl(undefined);
     setIsTitleFocused(false);
     setIsSummaryFocused(false);
-    setIsArticleFocused(false);
-    setArticleSelection({ start: 0, end: 0 });
   };
 
   return (
@@ -176,11 +132,12 @@ export default function ManageArticleScreen() {
             <ThemedText style={{ color: "purple" }}> Publication!</ThemedText>
           </ThemedText>
 
+          {/* Title Input */}
           <ThemedText style={styles.label}>Title:</ThemedText>
           <TextInput
             style={[
               styles.inputBase,
-              styles.titleInput, // Specific style for title
+              styles.titleInput,
               isTitleFocused ? styles.inputFocused : styles.inputDefault,
               {
                 backgroundColor: Colors[theme].inputBackground,
@@ -191,8 +148,11 @@ export default function ManageArticleScreen() {
             onBlur={() => setIsTitleFocused(false)}
             onChangeText={setTitle}
             value={title}
+            placeholder="Enter your article title..."
+            placeholderTextColor={theme === 'dark' ? '#888' : '#999'}
           />
 
+          {/* Summary Input */}
           <ThemedText style={styles.label}>Summary:</ThemedText>
           <TextInput
             style={[
@@ -209,31 +169,19 @@ export default function ManageArticleScreen() {
             value={summary}
             onFocus={() => setIsSummaryFocused(true)}
             onBlur={() => setIsSummaryFocused(false)}
+            placeholder="Write a brief summary of your article..."
+            placeholderTextColor={theme === 'dark' ? '#888' : '#999'}
           />
 
-          <ThemedText style={styles.label}>Article:</ThemedText>
-          <TextInput
-            ref={articleTextInputRef}
-            style={[
-              styles.inputBase,
-              styles.articleInput,
-              isArticleFocused ? styles.inputFocused : styles.inputDefault,
-              {
-                backgroundColor: Colors[theme].inputBackground,
-                color: Colors[theme].inputText,
-              },
-            ]}
-            multiline
-            onChangeText={setArticleMarkdownContent}
+          {/* Rich Text Editor */}
+          <ThemedText style={styles.label}>Article Content:</ThemedText>
+          <RichTextEditor
             value={articleMarkdownContent}
-            onFocus={() => setIsArticleFocused(true)}
-            onBlur={() => setIsArticleFocused(false)}
-            // Update selection state whenever it changes
-            onSelectionChange={(event) =>
-              setArticleSelection(event.nativeEvent.selection)
-            }
+            onChangeText={setArticleMarkdownContent}
+            placeholder="Start writing your article... Use the toolbar above to format your text."
           />
 
+          {/* Image Picker Button */}
           <TouchableOpacity
             style={styles.insertImageButton}
             onPress={handleImagePicker}
@@ -243,9 +191,7 @@ export default function ManageArticleScreen() {
             </ThemedText>
           </TouchableOpacity>
 
-          <ThemedText style={styles.label}>Attachments:</ThemedText>
-          {/* SPACE FOR GENERAL ATTACHMENTS*/}
-
+          {/* Preview Section */}
           <ThemedText style={styles.label}>Preview:</ThemedText>
 
           {/* Preview toggle buttons container with Glassmorphism */}
@@ -268,47 +214,64 @@ export default function ManageArticleScreen() {
                   },
                 ]}
               >
-                Mobile
+                📱 Mobile
               </ThemedText>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.previewToggleButton,
-                previewMode === "web" && styles.previewToggleButtonActive,
+                previewMode === "tablet" && styles.previewToggleButtonActive,
               ]}
-              onPress={() => setPreviewMode("web")}
+              onPress={() => setPreviewMode("tablet")}
             >
               <ThemedText
                 style={[
                   styles.previewButtonText,
                   {
                     color:
-                      previewMode === "web"
+                      previewMode === "tablet"
                         ? Colors[theme].background
                         : Colors[theme].text,
                   },
                 ]}
               >
-                Web
+                📱 Tablet
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.previewToggleButton,
+                previewMode === "desktop" && styles.previewToggleButtonActive,
+              ]}
+              onPress={() => setPreviewMode("desktop")}
+            >
+              <ThemedText
+                style={[
+                  styles.previewButtonText,
+                  {
+                    color:
+                      previewMode === "desktop"
+                        ? Colors[theme].background
+                        : Colors[theme].text,
+                  },
+                ]}
+              >
+                💻 Desktop
               </ThemedText>
             </TouchableOpacity>
           </GlassView>
 
-          {/* Article preview with Glassmorphism */}
-          <GlassView style={styles.previewContainer} hasShadow={true}>
-            {articleMarkdownContent ? ( // Only render if there's Markdown content
-              <HTML
-                source={{ html: articleHtmlContent }} // Pass the converted HTML
-                contentWidth={getPreviewWidth()} // Preview width is dynamic
-                tagsStyles={htmlTagsStyles} // HTML tag styles
-              />
-            ) : (
-              <ThemedText style={styles.noPreviewText}>
-                Type your article to see the preview.
-              </ThemedText>
-            )}
-          </GlassView>
+          {/* Device Preview */}
+          <DevicePreview
+            htmlContent={articleHtmlContent}
+            deviceType={previewMode}
+            title={title || "Article Title"}
+            author={user?.email || "Author Name"}
+            date={new Date().toLocaleDateString()}
+            imageUrl={mainImageUrl}
+          />
 
+          {/* Publish Button */}
           <TouchableOpacity
             style={styles.publishButton}
             onPress={handlePublish}
@@ -322,56 +285,6 @@ export default function ManageArticleScreen() {
     </SafeAreaView>
   );
 }
-// --- HTML Tag Styles ---
-const htmlTagsStyles: RenderHTMLProps["tagsStyles"] = {
-  p: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 10,
-    color: "#333",
-  },
-  h1: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 10,
-    color: "#1A1A1A",
-  },
-  h2: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 15,
-    marginBottom: 8,
-    color: "#1A1A1A",
-  },
-  h3: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 12,
-    marginBottom: 6,
-    color: "#1A1A1A",
-  },
-  ul: {
-    marginBottom: 10,
-  },
-  li: {
-    fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 5,
-    color: "#333",
-  },
-  img: {
-    maxWidth: "100%",
-    height: "auto",
-    marginTop: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  a: {
-    color: "purple",
-    textDecorationLine: "underline",
-  },
-};
 
 // --- Component Styles ---
 const styles = StyleSheet.create({
@@ -433,10 +346,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: "top",
   },
-  articleInput: {
-    minHeight: 500,
-    textAlignVertical: "top",
-  },
 
   // <---- BUTTON STYLES ---->
   insertImageButton: {
@@ -489,18 +398,5 @@ const styles = StyleSheet.create({
   previewButtonText: {
     fontSize: 14,
     fontWeight: "bold",
-  },
-
-  // <---- PREVIEW CONTAINER STYLES ---->
-  previewContainer: {
-    padding: 10,
-    minHeight: 200,
-    marginTop: 10,
-    backgroundColor: "transparent",
-  },
-  noPreviewText: {
-    textAlign: "center",
-    marginTop: 50,
-    color: "#888",
   },
 });

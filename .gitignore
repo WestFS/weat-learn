@@ -42,3 +42,18 @@ yarn-error.*
 
 #tables
 database.local
+
+# Documentation (temporarily excluded)
+docs/*.md
+docs/CHANGELOG.md
+docs/WYSIWYG_EDITOR_GUIDE.md
+docs/EMAIL_CONFIRMATION_GUIDE.md
+docs/DEVELOPER_SETUP.md
+docs/SUPABASE_EMAIL_CONFIRMATION_TROUBLESHOOTING.md
+
+
+# Obsidian
+.obsidian/*
+
+# VSCode
+.vscode/*
