@@ -1,6 +1,4 @@
 import { StyleSheet, FlatList, Pressable } from "react-native";
-
-import { Link } from "expo-router";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 import { SafeAreaView } from "react-native-safe-area-context";
