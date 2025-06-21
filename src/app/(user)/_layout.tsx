@@ -17,9 +17,9 @@ function TabBarIcon(props: {
 
 export default function UserTabLayout() {
   const colorScheme = useColorScheme() ?? "light";
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn } = useAuth();
 
-  if (!isLoggedIn || user?.role !== "user") {
+  if (!isLoggedIn) {
     return <Redirect href="/(auth)/login" />;
   }
 

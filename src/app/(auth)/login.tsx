@@ -1,5 +1,5 @@
 // External libraries (React, React Native, Expo)
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, StyleSheet, TextInput, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -14,9 +14,16 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { signIn, signUp, isLoading } = useAuth();
+  const { signIn, signUp, isLoading, isLoggedIn } = useAuth();
+  const router = useRouter();
 
   const theme = useColorScheme() ?? 'light';
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.replace('/(user)/home');
+    }
+  }, [isLoggedIn]);
 
   const handleLoginSubmit = async () => {
     if (!email || !password) {

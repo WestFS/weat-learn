@@ -16,4 +16,17 @@ export interface Article {
 
 export interface ArticleWithAuthor extends Article {
   author_name: string;
+  publishedAt: string;
+}
+
+
+export interface Publication {
+  id: string;
+  title: string;
+  content: string;
+  author: string; // string simples, não objeto
+  summary: string;
+  imageUrl?: string;
+  publishedAt: string;
+  category?: string;
 }

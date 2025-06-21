@@ -1,6 +1,5 @@
-import { supabase } from "../utils/supabase";
+import { getSupabaseClient } from "../utils/supabase";
 import { Article, ArticleWithAuthor } from "../types/article";
-import { UserRole } from "../types";
 
 export interface CreateArticleData {
   title: string;
@@ -18,6 +17,7 @@ export const createArticle = async (articleData: CreateArticleData): Promise<Art
 
   const generatedSlug = articleData.slug || articleData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
   try {
+    const supabase = await getSupabaseClient();
     const { data, error } = await supabase
       .from('articles')
       .insert({
@@ -53,10 +53,11 @@ export const createArticle = async (articleData: CreateArticleData): Promise<Art
 export const getPublishedArticles =  async (): Promise<ArticleWithAuthor[]> => {
   console.log('[ArticleService] Fetching published articles...');
   try {
+      const supabase = await getSupabaseClient();
       const { data, error } = await supabase
         .from('articles')
-        .select(` *, profiles ( full_name )`)
-        .eq ('is_published', true)
+        .select('*, profiles(full_name)')
+        .eq('is_published', true)
         .order('created_at', {ascending: false});
 
       if(error) {
@@ -68,7 +69,10 @@ export const getPublishedArticles =  async (): Promise<ArticleWithAuthor[]> => {
         ...item,
         author_name: item.profiles ? item.profiles.full_name : 'Unknowwn',
         created_at: new Date(item.created_at),
-        updated_at: new Date(item.updated_at)
+        updated_at: new Date(item.updated_at),
+        summary: item.summary,
+        imageUrl: item.main_image_url || undefined,
+
 
       })) as ArticleWithAuthor[];
 
@@ -81,9 +85,10 @@ export const getPublishedArticles =  async (): Promise<ArticleWithAuthor[]> => {
 export const getArticleByID = async (id: string): Promise<ArticleWithAuthor[] | null> => {
   console.log(`[ArticleService] Fetching article by ID: ${id}...`);
   try {
+    const supabase = await getSupabaseClient();
     const { data, error } = await supabase
       .from('articles')
-      .select('*, profile( full_name )')
+      .select('*, profiles(full_name)')
       .eq('id', id)
       .single();
 
@@ -107,54 +112,55 @@ export const getArticleByID = async (id: string): Promise<ArticleWithAuthor[] | 
     console.error(`[ArticleService] Failed to get article by ID ${id}:`, error.message);
     throw error;
   }
-}
+};
 
 export const updateArticle = async (id: string, updates: Partial<Article>): Promise<Article> => {
-  console.log(`[ArticleService] Updating article ${id}:`, updates);
-  try {
-    const { data, error } = await supabase
-    .from('articles')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single()
+    console.log(`[ArticleService] Updating article ${id}:`, updates);
+    try {
+        const supabase = await getSupabaseClient();
+        const { data, error } = await supabase
+            .from('articles')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
-    if (error) {
-      console.error('[ArticleService] Supabase update error:', error.message);
-      throw new Error(`Failed to update article: ${error.message}`);
+        if (error) {
+            console.error('[ArticleService] Supabase update error:', error.message);
+            throw new Error(`Failed to update article: ${error.message}`);
+        }
+
+        console.log('[ArticleService] Article updated:', data.id);
+        return {
+            ...data,
+            updated_at: new Date(data.updated_at),
+        };
+    } catch (error: any) {
+        console.error(`[ArticleService] Failed to update article ${id}:`, error.message);
+        throw error;
     }
-
-    console.log('[ArticleService] Article updated:', data.id);
-    return {
-      ...data,
-      updated_at: new Date(data.updated_at),
-    };
-  } catch(error: any) {
-    console.error('[ArticleService] Failed to update article ${id}:', error.message);
-    throw error;
-  }
 };
 
 export const deleteArticle = async (id: string): Promise<void> => {
-  console.log(`[ArticleService] Deleting article ${id}...`);
-  try {
-    const { data, error } = await supabase
-    .from('articles')
-    .delete()
-    .eq('id', id)
+    console.log(`[ArticleService] Deleting article ${id}...`);
+    try {
+        const supabase = await getSupabaseClient();
+        const { data, error } = await supabase
+            .from('articles')
+            .delete()
+            .eq('id', id);
 
-    if (error) {
-      console.error('[ArticleService] Supabase delete error:', error.message);
-      throw new Error(`Failed to delete article: ${error.message}`);
+        if (error) {
+            console.error('[ArticleService] Supabase delete error:', error.message);
+            throw new Error(`Failed to delete article: ${error.message}`);
+        }
+
+        console.log(`[ArticleService] Article ${id} deleted successfully.`);
+    } catch (error: any) {
+        console.error(`[ArticleService] Failed to delete article ${id}:`, error.message);
+        throw error;
     }
-
-    console.log(`[ArticleService] Article ${id} deleted successfully.`);
-  } catch (error: any) {
-    console.error(`[ArticleService] Failed to delete article ${id}:`, error.message);
-    throw error;
-  }
-}
-
+};
 
 /**
  * TODO

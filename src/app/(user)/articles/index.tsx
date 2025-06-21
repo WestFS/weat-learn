@@ -7,7 +7,6 @@ import {
   GradientBackground,
 } from "@/src/components/Themed";
 import ArticleCard from "@/src/components/ArticleCard";
-import { Publication } from "@/src/types/article";
 import { useColorScheme } from "@/src/components/useColorScheme";
 import Colors from "@/src/constants/Colors";
 import * as ArticleService from "@/src/services/articleService";
@@ -27,10 +26,10 @@ export default function ArticleListScreen() {
     error,
   } = useQuery({
     queryKey: ["userPublications"],
-    queryFn: ArticleService.getPublications,
+    queryFn: ArticleService.getPublishedArticles,
   });
 
-  const handleSelectArticle = (publication: Publication) => {
+  const handleSelectArticle = (publication: any) => {
     router.push({
       pathname: "/(user)/articles/[id]",
       params: { id: publication.id },

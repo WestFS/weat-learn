@@ -1,9 +1,10 @@
-import { supabase } from "@/src/utils/supabase";
+import { getSupabaseClient } from "@/src/utils/supabase";
 import { User } from "../types/user";
 import { LoginRequest } from "../types";
 import { Session } from '@supabase/supabase-js';
+import { UserRole } from "../types/user";
 
-const mapSupabaseUserToAppUser = (supabaseUser: any): User => {
+export const mapSupabaseUserToAppUser = (supabaseUser: any): User => {
 
   const role: 'user' | 'admin' = supabaseUser.app_metadata?.role || 'user';
 
@@ -50,6 +51,7 @@ export const confirmEmail = async (): Promise<{ success: boolean; message: strin
 
       if (accessToken && refreshToken) {
         console.log('[AuthService] Setting session with tokens...');
+        const supabase = await getSupabaseClient();
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: decodeURIComponent(accessToken),
           refresh_token: decodeURIComponent(refreshToken),
@@ -72,6 +74,7 @@ export const confirmEmail = async (): Promise<{ success: boolean; message: strin
 
     // Try to get the current session
     console.log('[AuthService] Checking current session...');
+    const supabase = await getSupabaseClient();
     const { data, error } = await supabase.auth.getSession();
     
     if (error) {
@@ -112,7 +115,8 @@ export const signIn = async (data: LoginRequest): Promise<User> => {
   console.log('[AuthService] Attempting to sign in for:', data.email);
 
   try {
-      const {data: authData, error} = await supabase.auth.signInWithPassword({
+    const supabase = await getSupabaseClient();
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password!,
     });
@@ -120,15 +124,16 @@ export const signIn = async (data: LoginRequest): Promise<User> => {
     if (error) {
       console.error('[AuthService] Supabase signIn error: ', error.message);
       throw new Error(error.message);
-    };
+    }
 
-    if(!authData.user) {
+    if (!authData.user) {
       console.warn('[AuthService] Sign-in successful but no user object returned. Email confirmation pending?');
       throw new Error('Please check your credentials or confirm your email.');
     }
 
     console.log('[AuthService] User successfully signed in:', authData.user.id);
-    return mapSupabaseUserToAppUser(authData.user);
+
+    return await getProfile();
 
   } catch (error: any) {
     console.error('[AuthService] Failed to sign in:', error.message);
@@ -147,6 +152,7 @@ export const signUp = async (data: LoginRequest): Promise<User | null> => {
   console.log('[AuthService] Attempting to sign up:', data.email);
 
   try {
+    const supabase = await getSupabaseClient();
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password!,
@@ -185,6 +191,7 @@ export const signUp = async (data: LoginRequest): Promise<User | null> => {
 export const signOut = async (): Promise<void> => {
   console.log('[AuthService] Signing out...');
   try {
+    const supabase = await getSupabaseClient();
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('[AuthService] Supabase signOut error:', error.message);
@@ -206,6 +213,7 @@ export const getProfile = async (): Promise<User> => {
   console.log('[AuthService] Checking for active Supabase session...');
   try {
     // supabase.auth.getUser() returns the currently logged-in user (if any).
+    const supabase = await getSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error) {
@@ -218,8 +226,23 @@ export const getProfile = async (): Promise<User> => {
       throw new Error('Unauthenticated user.');
     }
 
-    console.log('[AuthService] Session found for user:', user.id);
-    return mapSupabaseUserToAppUser(user);
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('[AuthService] Error fetching profile:', profileError.message);
+      throw new Error('Could not fetch profile data');
+    }
+
+    return {
+      id: user.id,
+      name: profile.full_name || user.email?.split('@')[0] || 'User',
+      email: user.email || '',
+      role: profile.role as UserRole,
+    };
 
   } catch (error: any) {
     console.error('[AuthService] Failed to get profile:', error.message);
@@ -233,8 +256,9 @@ export const getProfile = async (): Promise<User> => {
  * @param callback - Function to be called with (event, session).
  * @returns An object with an `unsubscribe` method to stop listening.
  */
-export const onAuthStateChange = (callback: (event: string, session: Session | null) => void) => {
+export const onAuthStateChange = async (callback: (event: string, session: Session | null) => void) => {
   console.log('[AuthService] Subscribing to auth state changes.');
+  const supabase = await getSupabaseClient();
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
     callback(event, session);
   });
@@ -250,6 +274,7 @@ export const resendEmailConfirmation = async (email: string): Promise<{ success:
   console.log('[AuthService] Resending email confirmation to:', email);
   
   try {
+    const supabase = await getSupabaseClient();
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email,

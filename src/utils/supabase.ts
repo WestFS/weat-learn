@@ -1,5 +1,5 @@
 import 'react-native-url-polyfill/auto'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Platform } from 'react-native'
 
 // Check if we're in a browser environment
@@ -10,56 +10,16 @@ const createStorageAdapter = () => {
   if (Platform.OS === 'web' && isBrowser) {
     // Use localStorage for web
     return {
-      getItem: (key: string) => {
-        try {
-          return Promise.resolve(localStorage.getItem(key))
-        } catch {
-          return Promise.resolve(null)
-        }
-      },
-      setItem: (key: string, value: string) => {
-        try {
-          localStorage.setItem(key, value)
-          return Promise.resolve()
-        } catch {
-          return Promise.resolve()
-        }
-      },
-      removeItem: (key: string) => {
-        try {
-          localStorage.removeItem(key)
-          return Promise.resolve()
-        } catch {
-          return Promise.resolve()
-        }
-      },
+      getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
+      setItem: (key: string, value: string) => { localStorage.setItem(key, value); return Promise.resolve(); },
+      removeItem: (key: string) => { localStorage.removeItem(key); return Promise.resolve(); },
     }
   } else if (isBrowser) {
     // For React Native web, use localStorage as fallback
     return {
-      getItem: (key: string) => {
-        try {
-          return Promise.resolve(localStorage.getItem(key))
-        } catch {
-          return Promise.resolve(null)
-        }
-      },
-      setItem: (key: string, value: string) => {
-        try {
-          localStorage.setItem(key, value)
-          return Promise.resolve()
-        } catch {
-          return Promise.resolve()
-        }
-      },
-      removeItem: (key: string) => {
-        try {
-          localStorage.removeItem(key)
-          return Promise.resolve()
-        } catch {
-          return Promise.resolve()
-        }
-      },
+      getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
+      setItem: (key: string, value: string) => { localStorage.setItem(key, value); return Promise.resolve(); },
+      removeItem: (key: string) => { localStorage.removeItem(key); return Promise.resolve(); },
     }
   } else {
     // For SSR, return a mock storage that does nothing
@@ -84,25 +44,51 @@ const getAsyncStorage = async () => {
   return null
 }
 
-// Create Supabase client with proper configuration
-export const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL || "",
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
-  {
-    auth: {
-      storage: createStorageAdapter(),
-      autoRefreshToken: true,
-      persistSession: isBrowser, // Only persist on client side
-      detectSessionInUrl: Platform.OS === 'web',
-      flowType: 'pkce',
-    },
-    global: {
-      headers: {
-        'X-Client-Info': 'weat-learn',
-      },
-    },
+// Factory function to get the Supabase client
+export const getSupabaseClient = async (): Promise<SupabaseClient> => {
+  let storage: any;
+  let persistSession = true;
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Web
+    storage = {
+      getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
+      setItem: (key: string, value: string) => { localStorage.setItem(key, value); return Promise.resolve(); },
+      removeItem: (key: string) => { localStorage.removeItem(key); return Promise.resolve(); },
+    };
+  } else if (typeof window === 'undefined') {
+    // SSR
+    storage = {
+      getItem: () => Promise.resolve(null),
+      setItem: () => Promise.resolve(),
+      removeItem: () => Promise.resolve(),
+    };
+    persistSession = false;
+  } else {
+    // React Native
+    const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
+    storage = AsyncStorage;
   }
-)
+
+  return createClient(
+    process.env.EXPO_PUBLIC_SUPABASE_URL || "",
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
+    {
+      auth: {
+        storage,
+        autoRefreshToken: true,
+        persistSession,
+        detectSessionInUrl: Platform.OS === 'web',
+        flowType: 'pkce',
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'weat-learn',
+        },
+      },
+    }
+  );
+}
 
 // Helper function to check if Supabase is properly initialized
 export const isSupabaseInitialized = () => {
@@ -110,16 +96,6 @@ export const isSupabaseInitialized = () => {
     process.env.EXPO_PUBLIC_SUPABASE_URL &&
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
   )
-}
-
-// Helper function to get Supabase client with error handling
-export const getSupabaseClient = () => {
-  if (!isSupabaseInitialized()) {
-    throw new Error(
-      'Supabase is not properly configured. Please check your environment variables.'
-    )
-  }
-  return supabase
 }
 
 // Helper function to handle email confirmation
@@ -139,6 +115,7 @@ export const handleEmailConfirmation = async () => {
       }
 
       if (accessToken && refreshToken) {
+        const supabase = await getSupabaseClient()
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: decodeURIComponent(accessToken),
           refresh_token: decodeURIComponent(refreshToken),
@@ -155,6 +132,7 @@ export const handleEmailConfirmation = async () => {
     }
 
     // Try to get the current session
+    const supabase = await getSupabaseClient()
     const { data, error } = await supabase.auth.getSession();
     
     if (error) {
@@ -200,6 +178,6 @@ export const createSSRSafeSupabaseClient = () => {
     }
   }
   
-  return supabase
+  return getSupabaseClient()
 }
 

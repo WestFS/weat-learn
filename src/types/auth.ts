@@ -1,4 +1,5 @@
 import { User } from './user';
+import { Session } from '@supabase/supabase-js';
 
 export type LoginRequest = {
   email: string;
@@ -12,6 +13,7 @@ export type AuthResponse = {
 
 export type AuthContextState = {
   user: User | null | undefined;
+  session: Session | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   signIn: (data: LoginRequest) => Promise<void>;

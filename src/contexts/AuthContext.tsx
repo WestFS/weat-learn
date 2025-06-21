@@ -1,9 +1,14 @@
 import { createContext, useContext, ReactNode, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthUser, userQueryKey } from '@/src/hooks/useAuthUser';
 import * as AuthService from '@/src/services/authService';
 import { AuthContextState, LoginRequest } from '@/src/types/auth';
 import { User } from '@/src/types/user';
+import { getSupabaseClient } from '@/src/utils/supabase';
+import { Session } from '@supabase/supabase-js';
+import { mapSupabaseUserToAppUser } from '@/src/services/authService';
+
+// Define userQueryKey locally
+const userQueryKey = ['userProfile'];
 
 // Create the context with a default placeholder value.
 const AuthContext = createContext<AuthContextState>({} as AuthContextState);
@@ -17,9 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Get the QueryClient instance to manipulate the cache.
   const queryClient = useQueryClient();
   const [isClient, setIsClient] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Fetch the user data using our custom hook. This is the "source of truth".
-  const { data: user, isLoading, isError } = useAuthUser();
+  // Removed: const { data: userData, isLoading: userDataLoading, isError } = useAuthUser();
 
   // Handle SSR - only run auth logic on client side
   useEffect(() => {
@@ -27,19 +35,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Only set up auth state change listener on client side
-    if (!isClient) return;
+    let unsubscribe: (() => void) | undefined;
+    let mounted = true;
 
-    const { unsubscribe } = AuthService.onAuthStateChange((Event, session) => {
-      console.log('Auth State Change Event in AuthContext:', Event);
-      // This makes TanStack Query refetch the profile, keeping UI in sync.
-      if (Event === 'SIGNED_IN' || Event === 'SIGNED_OUT') {
-        queryClient.invalidateQueries({ queryKey: userQueryKey });
-      }
-    });
+    const setup = async () => {
+      const supabase = await getSupabaseClient();
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (event === 'INITIAL_SESSION') {
+            if (!mounted) return;
+            setSession(session);
+            setUser(session?.user ? mapSupabaseUserToAppUser(session.user) : null);
+            setLoading(false);
+          }
+          if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            if (!mounted) return;
+            setSession(session);
+            setUser(session?.user ? mapSupabaseUserToAppUser(session.user) : null);
+          }
+        }
+      );
+      unsubscribe = () => subscription.unsubscribe();
+    };
 
-    return () => unsubscribe();
-  }, [queryClient, isClient]);
+    setup();
+    return () => {
+      mounted = false;
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   /**
   * Handles the sign-in logic. It calls the auth service and, on success,
@@ -54,8 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const loggedInUser = await AuthService.signIn(data);
       // Manually set the query data in the cache to the logged-in user.
-      // This immediately updates the UI without needing a re-fetch.
       queryClient.setQueryData(userQueryKey, loggedInUser);
+
+      // Immediately update context state
+      setUser(loggedInUser);
+      // If you have access to the session, setSession(session);
     } catch (error) {
       console.error('Failed to SignIn:', error);
       throw error;
@@ -72,7 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await AuthService.signOut();
-    // Set the user query data to null to reflect the signed-out state.
+    setUser(null);      // Immediately clear user
+    setSession(null);   // Immediately clear session
     queryClient.setQueryData(userQueryKey, null);
   }, [queryClient, isClient]);
 
@@ -100,8 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // The value object that will be provided to all consuming components.
   const value: AuthContextState = {
     user: isClient ? user : null,  // Only show user on client side
-    isLoggedIn: isClient && !!user && !isError,  // Only logged in on client side
-    isLoading: !isClient || isLoading,  // Show loading during SSR
+    session, // Provide session
+    isLoggedIn: isClient && !!user,  // Only logged in on client side
+    isLoading: !isClient || loading,  // Show loading during SSR
     signIn,
     signOut,
     signUp,
@@ -114,5 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  * A custom hook that simplifies accessing the AuthContext.
  */
 export function useAuth() {
+  return useContext(AuthContext);
+}
+
+export function useAuthContext() {
   return useContext(AuthContext);
 }
